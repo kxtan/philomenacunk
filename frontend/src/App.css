@@ -1,0 +1,78 @@
+/* Full screen dark BG and vertical centering */
+.app-centered-bg {
+  min-height: 100vh;
+  min-width: 100vw;
+  background: #232323;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.app-brand {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.app-brand__title {
+  color: #fff;
+  font-size: 2.9rem;
+  font-weight: bold;
+  letter-spacing: -2px;
+  font-family: sans-serif;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.app-brand__desc {
+  color: #b0b0b0;
+  font-size: 1.18rem;
+  font-weight: 400;
+  font-family: sans-serif;
+}
+
+
+/* Input floating in the middle, no background on container */
+.app-float-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Input is full width, rounded left */
+.app-float-input input {
+  flex: 1;
+  height: 48px;
+  padding: 0 1.15rem;
+  border-radius: 8px 0 0 8px;
+  border: 1.5px solid #31313a;
+  border-right: none;
+  background: #232323;
+  color: #f6f6f6;
+  font-size: 1.15rem;
+  outline: none;
+}
+
+.app-sendbtn {
+  height: 48px;
+  width: 48px;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  background: #766af6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-left: -1px;
+}
+
+.app-sendbtn svg {
+  width: 23px;
+  height: 23px;
+}
