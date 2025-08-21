@@ -11,7 +11,7 @@ function App() {
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") handleSend();
-  };
+  }; 
 
   return (
     <div className="app-centered-bg">
@@ -32,7 +32,7 @@ function App() {
         />
         <button className="app-sendbtn" onClick={handleSend} title="Send">
           <svg fill="none" viewBox="0 0 24 24">
-            <path d="M2 21l21-9-21-9v7l15 2-15 2v7z" fill="#fff"/>
+            <path d="M2 21l21-9-21-9v7l15 2-15 2v7z" fill="#000000ff"/>
           </svg>
         </button>
       </div>
