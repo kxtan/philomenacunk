@@ -1,4 +1,15 @@
-/* Full screen dark BG and vertical centering */
+body, html, #root {
+  font-family: 'Inter', Arial, Helvetica, sans-serif !important;
+}
+
+input,
+button,
+textarea {
+  font-family: 'Inter', Arial, Helvetica, sans-serif !important;
+}
+
+
+
 .app-centered-bg {
   min-height: 100vh;
   min-width: 100vw;
@@ -20,7 +31,7 @@
   font-size: 2.9rem;
   font-weight: bold;
   letter-spacing: -2px;
-  font-family: sans-serif;
+  font-family: 'Inter';
   display: block;
   margin-bottom: 8px;
 }
@@ -29,7 +40,7 @@
   color: #b0b0b0;
   font-size: 1.18rem;
   font-weight: 400;
-  font-family: sans-serif;
+  font-family: 'Inter';
 }
 
 
@@ -56,6 +67,8 @@
   color: #f6f6f6;
   font-size: 1.15rem;
   outline: none;
+  font-family: monospace !important;
+
 }
 
 .app-sendbtn {
@@ -63,7 +76,7 @@
   width: 48px;
   border: none;
   border-radius: 0 8px 8px 0;
-  background: #766af6;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -73,6 +86,10 @@
 }
 
 .app-sendbtn svg {
-  width: 23px;
-  height: 23px;
+  width: 50px;
+  height: 50px;
+}
+
+* {
+  font-family: 'Inter', Arial, Helvetica, sans-serif !important;
 }
