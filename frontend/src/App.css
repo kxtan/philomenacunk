@@ -8,8 +8,6 @@ textarea {
   font-family: 'Inter', Arial, Helvetica, sans-serif !important;
 }
 
-
-
 .app-centered-bg {
   min-height: 100vh;
   min-width: 100vw;
@@ -21,6 +19,7 @@ textarea {
   position: relative;
 }
 
+/* Brand section styling remains unchanged */
 .app-brand {
   text-align: center;
   margin-bottom: 36px;
@@ -43,22 +42,30 @@ textarea {
   font-family: 'Inter';
 }
 
+/* ----- LAYOUT CHANGES START HERE ----- */
 
-/* Input floating in the middle, no background on container */
+/* Message list and input bar both same width */
+.app-message-list,
+.app-float-input {
+  max-width: 480px; /* <-- UPDATED: chat width for both */
+  width: 100%; /* <-- fill available container width */
+}
+
 .app-float-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 600px;
+  /* rest unchanged */
   background: transparent;
   box-shadow: none;
+  margin: 0 auto; /* <-- center input bar horizontally */
 }
 
-/* Input is full width, rounded left */
+/* Input full width in bar, rounded left */
 .app-float-input input {
   flex: 1;
   height: 48px;
+  min-width: 0; /* <-- force flexbox to allow shrinking/growing */
   padding: 0 1.15rem;
   border-radius: 8px 0 0 8px;
   border: 1.5px solid #31313a;
@@ -68,9 +75,9 @@ textarea {
   font-size: 1.15rem;
   outline: none;
   font-family: monospace !important;
-
 }
 
+/* Send button flush with input */
 .app-sendbtn {
   height: 48px;
   width: 48px;
@@ -86,8 +93,27 @@ textarea {
 }
 
 .app-sendbtn svg {
-  width: 50px;
-  height: 50px;
+  width: 32px;
+  height: 32px;
+}
+
+/* Messages styling -- no change needed */
+.app-message-list {
+  margin: 16px 0;
+  max-width: 480px;
+  width: 100%;
+}
+
+.app-msg-user {
+  text-align: right;
+  color: #3FE0C5;
+  margin: 8px 0;
+}
+
+.app-msg-bot {
+  text-align: left;
+  color: #E0E0E0;
+  margin: 8px 0;
 }
 
 * {
