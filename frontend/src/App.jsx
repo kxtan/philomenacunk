@@ -94,7 +94,7 @@ function App() {
   };
 
   return (
-    <div className={`app-centered-bg ${hasStarted ? "app-centered-bg--chat" : "app-centered-bg--centered"}`}>
+    <div className={"app-centered-bg"}>
       <div className={`app-brand ${hasStarted ? "app-brand--top" : "app-brand--centered"}`}>
         <span className="app-brand__title">philomenacunk</span>
         <div className="app-brand__desc">

@@ -21,8 +21,23 @@ textarea {
 
 /* Brand section styling remains unchanged */
 .app-brand {
+  transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 2;
+}
+
+.app-brand--centered {
+  top: 35%;
   text-align: center;
-  margin-bottom: 36px;
+}
+
+.app-brand--top {
+  top: 24px;
+  text-align: center;
 }
 
 .app-brand__title {
