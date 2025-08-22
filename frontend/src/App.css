@@ -67,15 +67,33 @@ textarea {
 }
 
 .app-float-input {
+  max-width: 480px;
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  /* rest unchanged */
   background: transparent;
   box-shadow: none;
-  margin: 0 auto; /* <-- center input bar horizontally */
+  transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1); /* smooth move */
+  z-index: 10;
 }
 
+/* Centered state: static positioning, margin for vertical breathing room */
+.app-float-input--centered {
+  position: static;
+  margin-top: 40px;
+  margin-bottom: 0;
+  left: auto;
+  transform: none;
+}
+
+/* Floating-to-bottom: fixed, left-centered */
+.app-float-input--bottom {
+  position: fixed;
+  bottom: 32px;
+  /* left: 50%;
+  transform: translateX(-50%); */
+  margin: 0;
+}
 /* Input full width in bar, rounded left */
 .app-float-input input {
   flex: 1;
