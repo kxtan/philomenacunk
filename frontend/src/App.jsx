@@ -14,7 +14,7 @@ const qnaPairs = [
       "Plato would say your “true form” lies beyond the cave. But remember: in the cave, rent is due on the 1st. Passion is great, but so is air conditioning.",
   },
   {
-    question: "Why do people ghost each other?",
+    question: "Why do people ghost each other?",  
     answer:
       "Aristotle would call humans “social animals.” Apparently, some are more “ghostly animals.” Plato might suggest they’re stuck in the shadows, afraid of facing the blinding light of… accountability.",
   },
@@ -94,7 +94,7 @@ function App() {
   };
 
   return (
-    <div className={`app-centered-bg ${hasStarted ? "app-centered-bg--chat" : "app-centered-bg--centered"}`}>
+    <div className={"app-centered-bg"}>
       <div className={`app-brand ${hasStarted ? "app-brand--top" : "app-brand--centered"}`}>
         <span className="app-brand__title">philomenacunk</span>
         <div className="app-brand__desc">

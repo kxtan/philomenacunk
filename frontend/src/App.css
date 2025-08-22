@@ -21,8 +21,23 @@ textarea {
 
 /* Brand section styling remains unchanged */
 .app-brand {
+  transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 2;
+}
+
+.app-brand--centered {
+  top: 35%;
   text-align: center;
-  margin-bottom: 36px;
+}
+
+.app-brand--top {
+  top: 24px;
+  text-align: center;
 }
 
 .app-brand__title {
@@ -52,15 +67,33 @@ textarea {
 }
 
 .app-float-input {
+  max-width: 480px;
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  /* rest unchanged */
   background: transparent;
   box-shadow: none;
-  margin: 0 auto; /* <-- center input bar horizontally */
+  transition: all 0.5s cubic-bezier(0.77, 0, 0.175, 1); /* smooth move */
+  z-index: 10;
 }
 
+/* Centered state: static positioning, margin for vertical breathing room */
+.app-float-input--centered {
+  position: static;
+  margin-top: 40px;
+  margin-bottom: 0;
+  left: auto;
+  transform: none;
+}
+
+/* Floating-to-bottom: fixed, left-centered */
+.app-float-input--bottom {
+  position: fixed;
+  bottom: 32px;
+  /* left: 50%;
+  transform: translateX(-50%); */
+  margin: 0;
+}
 /* Input full width in bar, rounded left */
 .app-float-input input {
   flex: 1;
@@ -97,11 +130,41 @@ textarea {
   height: 32px;
 }
 
-/* Messages styling -- no change needed */
 .app-message-list {
-  margin: 16px 0;
+  margin: 0 auto;
   max-width: 480px;
   width: 100%;
+  overflow-y: auto;
+  /* NEW: Prevent overlap with brand and input */
+  position: relative;
+  z-index: 1;
+  /* For when both input and brand are floating (after chat starts) */
+  margin-top: 150px; /* Height of brand/top bar */
+  margin-bottom: 90px; /* Height of input bar */
+  /* Limit the message area height so it doesn't overflow into fixed header/footer */
+  max-height: calc(100vh - 110px - 90px);
+  transition: max-height 0.4s;
+  scrollbar-width: thin;
+  scrollbar-color: #444 #222;
+}
+
+.app-message-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.app-message-list::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 5px;
+  transition: background 0.2s;
+}
+
+.app-message-list::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.app-message-list::-webkit-scrollbar-track {
+  background: #222;
+  border-radius: 5px;
 }
 
 .app-msg-user {
