@@ -15,7 +15,7 @@ load_dotenv()
 app = FastAPI()
 
 # Load your CSV as a knowledge base
-csv_path = "data/philosophy_data.csv"  # Change to your CSV file path
+csv_path = "data/test_data.csv"  # Change to your CSV file path
 loader = CSVLoader(file_path=csv_path)
 documents = loader.load()
 
