@@ -1,7 +1,4 @@
-import { useState } from "react";
-import "./App.css";
-
-// Q&A pairs for simulated responses
+// Q&A pairs for simulated responses (fallback if API fails)
 const qnaPairs = [
   {
     question: "Why is adulting so hard?",
@@ -14,7 +11,7 @@ const qnaPairs = [
       "Plato would say your “true form” lies beyond the cave. But remember: in the cave, rent is due on the 1st. Passion is great, but so is air conditioning.",
   },
   {
-    question: "Why do people ghost each other?",  
+    question: "Why do people ghost each other?",  
     answer:
       "Aristotle would call humans “social animals.” Apparently, some are more “ghostly animals.” Plato might suggest they’re stuck in the shadows, afraid of facing the blinding light of… accountability.",
   },
@@ -54,23 +51,51 @@ const qnaPairs = [
       "Socrates said, “The unexamined life is not worth living.” But he didn’t have Spotify, so maybe chill—examining your playlists counts too.",
   },
 ];
+import { useState } from "react";
+import "./App.css";
+
+
 
 function App() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   const [hasStarted, setHasStarted] = useState(false);
 
-  const handleSend = () => {
+
+  const handleSend = async () => {
     if (!input.trim()) return;
     if (!hasStarted) setHasStarted(true);
 
+    const userMsg = { sender: "user", text: input };
     setMessages((msgs) => [
       ...msgs,
-      { sender: "user", text: input }
+      userMsg
     ]);
 
-    setTimeout(() => {
-      // Loose matching
+    // Show a loading message while waiting for API
+    setMessages((msgs) => [
+      ...msgs,
+      { sender: "bot", text: "Thinking..." }
+    ]);
+
+
+    try {
+      const response = await fetch("http://localhost:8000/ask", {
+        method: "POST",
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question: input })
+      });
+      const data = await response.json();
+      const botReply = data.answer || "Sorry, I don't have a philosophical answer for that yet.";
+      setMessages((msgs) => [
+        ...msgs.slice(0, -1), // Remove the "Thinking..." message
+        { sender: "bot", text: botReply }
+      ]);
+    } catch (err) {
+      // Fallback: try to match with qnaPairs
       const loweredInput = input.trim().toLowerCase();
       const match = qnaPairs.find(pair =>
         pair.question.toLowerCase().includes(loweredInput) ||
@@ -78,13 +103,12 @@ function App() {
       );
       const botReply = match
         ? match.answer
-        : `Sorry, I don't have a philosophical answer for that yet.`;
-
+        : "Sorry, there was an error connecting to the philosopher API, and I don't have a witty answer for that yet.";
       setMessages((msgs) => [
-        ...msgs,
+        ...msgs.slice(0, -1),
         { sender: "bot", text: botReply }
       ]);
-    }, 500);
+    }
 
     setInput("");
   };
