@@ -6,11 +6,14 @@ from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
 from langchain_community.llms import OpenAI
 from langchain.chains import RetrievalQA
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.llms import HuggingFacePipeline
 import tempfile
+from langchain.agents import initialize_agent, Tool
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.utilities import WikipediaAPIWrapper
 
 load_dotenv()
 
@@ -74,7 +77,7 @@ if USE_HF:
     )
     embeddings = HuggingFaceEmbeddings(model_name=hf_embedding_model)
 else:
-    llm = OpenAI(temperature=0)  # Requires OPENAI_API_KEY env variable
+    llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)  # Use ChatOpenAI for chat models
     embeddings = OpenAIEmbeddings()
 
 vectorstore = Chroma.from_documents(docs, embeddings)
@@ -91,22 +94,33 @@ class ChatRequest(BaseModel):
     question: str = "what is the meaning of life?"
 
 
+# Wikipedia tool setup
+wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
+tools = [
+    Tool(
+        name="Wikipedia",
+        func=wikipedia.run,
+        description="Useful for answering factual or historical questions."
+    )
+]
+
+# Initialize agent for autonomous tool use
+agent = initialize_agent(
+    tools,
+    llm,
+    agent="zero-shot-react-description",
+    verbose=True
+)
+
+
 @app.post(
     "/ask", summary="Ask the Philosomena Cunk", tags=["Philosophy QA"]
 )
 async def ask_philosopher(request: ChatRequest):
-    # Use a prompt template for sarcasm, philosophy, and history
-    prompt_template = (
-        "Respond to the following question with a sarcastic tone, "
-        "infused with philosophical and historical context. "
-        "Reference philosophers or historical events as appropriate, "
-        "and ensure the answer is witty and dry.\n\n"
-        "Question: {question}\n"
-        "Answer:"
+    prompt = (
+        "Respond as Philomena Cunk: sarcastic, witty, with philosophical and historical context. "
+        "Use Wikipedia or other tools if needed. "
+        f"Question: {request.question}\nAnswer:"
     )
-    # Format the prompt for the LLM
-    prompt = prompt_template.format(question=request.question)
-    # Get the answer from the LLM using the prompt
-    answer = qa_chain.run(prompt)
-    # Return only the output text
+    answer = agent.run(prompt)
     return {"answer": answer}
