@@ -4,19 +4,24 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
-from langchain_community.llms import OpenAI
 from langchain.chains import RetrievalQA
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.llms import HuggingFacePipeline
 import tempfile
+from langchain.agents import Tool
+from langchain_community.tools import WikipediaQueryRun, DuckDuckGoSearchRun
+from langchain_community.utilities import WikipediaAPIWrapper
+# LangGraph imports
+from langgraph.prebuilt import create_react_agent
+from langchain.agents import Tool
 
 load_dotenv()
 
 
 app = FastAPI(
-    title="Philosopher Cunk API",
+    title="Philomena Cunk API",
     description="An API for asking philosophical, sarcastic, and historically informed questions to an AI inspired by Philomena Cunk.",
     version="1.0.0"
 )
@@ -74,7 +79,7 @@ if USE_HF:
     )
     embeddings = HuggingFaceEmbeddings(model_name=hf_embedding_model)
 else:
-    llm = OpenAI(temperature=0)  # Requires OPENAI_API_KEY env variable
+    llm = ChatOpenAI(model="gpt-4.1-2025-04-14", temperature=0)  # Use ChatOpenAI for chat models
     embeddings = OpenAIEmbeddings()
 
 vectorstore = Chroma.from_documents(docs, embeddings)
@@ -85,28 +90,53 @@ qa_chain = RetrievalQA.from_chain_type(
     return_source_documents=False,
 )
 
-
-
 class ChatRequest(BaseModel):
     question: str = "what is the meaning of life?"
 
 
+# Wikipedia tool setup
+wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
+duckduckgo_search = DuckDuckGoSearchRun()
+
+tools = [
+    Tool(
+        name="Wikipedia",
+        description="Useful for answering factual or historical questions.",
+        func=wikipedia.run,
+    ),
+    Tool(
+        name="DuckDuckGo_Search",
+        description="Useful for searching the web for current events or general information.",
+        func=duckduckgo_search.run,
+    ),
+]
+
+# LangGraph ReAct agent setup
+react_agent = create_react_agent(llm, tools)
+
+
 @app.post(
-    "/ask", summary="Ask the Philosomena Cunk", tags=["Philosophy QA"]
+    "/ask", summary="Ask the Philomena Cunk", tags=["Philosophy QA"]
 )
 async def ask_philosopher(request: ChatRequest):
-    # Use a prompt template for sarcasm, philosophy, and history
-    prompt_template = (
-        "Respond to the following question with a sarcastic tone, "
-        "infused with philosophical and historical context. "
-        "Reference philosophers or historical events as appropriate, "
-        "and ensure the answer is witty and dry.\n\n"
-        "Question: {question}\n"
-        "Answer:"
+    prompt = (
+        "You are Philomena Cunk, a satirical British presenter. "
+        "Respond to the following question with wit, sarcasm, and real historical or philosophical context. "
+        "If you use Wikipedia, add your own humorous misunderstanding. "
+        "Keep your answer under 100 words. Always include a witty remark. End with a rhetorical question if possible. "
+        "Examples:\n"
+        "Q: What is the meaning of life?\n"
+        "A: Well, some say it's 42, but I think it's mostly about finding the remote control before your tea goes cold.\n"
+        "Q: Who was Socrates?\n"
+        "A: Socrates was a Greek philosopher who asked so many questions, people eventually made him drink poison just to get some peace and quiet.\n"
+        f"Q: {request.question}\nA:"
     )
-    # Format the prompt for the LLM
-    prompt = prompt_template.format(question=request.question)
-    # Get the answer from the LLM using the prompt
-    answer = qa_chain.run(prompt)
-    # Return only the output text
+    # Use LangGraph ReAct agent to get the answer
+    result = react_agent.invoke({"messages": [{"role": "user", "content": prompt}]})
+    messages = result.get("messages", [])
+    answer = ""
+    if messages and hasattr(messages[-1], "content"):
+        answer = messages[-1].content
+    else:
+        answer = str(result)
     return {"answer": answer}
