@@ -19,7 +19,7 @@ load_dotenv()
 
 
 app = FastAPI(
-    title="Philosopher Cunk API",
+    title="Philomena Cunk API",
     description="An API for asking philosophical, sarcastic, and historically informed questions to an AI inspired by Philomena Cunk.",
     version="1.0.0"
 )
@@ -77,7 +77,7 @@ if USE_HF:
     )
     embeddings = HuggingFaceEmbeddings(model_name=hf_embedding_model)
 else:
-    llm = ChatOpenAI(model="gpt-4-1106-preview", temperature=0)  # Use ChatOpenAI for chat models
+    llm = ChatOpenAI(model="gpt-4.1-2025-04-14", temperature=0)  # Use ChatOpenAI for chat models
     embeddings = OpenAIEmbeddings()
 
 vectorstore = Chroma.from_documents(docs, embeddings)
