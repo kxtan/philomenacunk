@@ -25,6 +25,42 @@ logger = logging.getLogger("philomena_cunk")
 load_dotenv()
 
 
+
+# Redis cache for common questions
+try:
+    import redis
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_DB = int(os.getenv("REDIS_DB", 0))
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+    redis_client = redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=REDIS_DB,
+        password=REDIS_PASSWORD,
+        decode_responses=True,
+    )
+    # Test connection
+    try:
+        redis_client.ping()
+        logger.info("Connected to Redis server.")
+    except Exception as e:
+        logger.warning(f"Redis server not available: {e}. Caching disabled.")
+        class DummyRedis:
+            def get(self, key):
+                return None
+            def set(self, key, value, ex=None):
+                pass
+        redis_client = DummyRedis()
+except ImportError as e:
+    logger.warning(f"redis-py not installed: {e}. Caching disabled.")
+    class DummyRedis:
+        def get(self, key):
+            return None
+        def set(self, key, value, ex=None):
+            pass
+    redis_client = DummyRedis()
+
 app = FastAPI(
     title="Philomena Cunk API",
     description="An API for asking philosophical, sarcastic, and historically informed questions to an AI inspired by Philomena Cunk.",
@@ -142,10 +178,20 @@ tools = [
 react_agent = create_react_agent(llm, tools)
 
 
+
+
 @app.post(
     "/ask", summary="Ask the Philomena Cunk", tags=["Philosophy QA"]
 )
 async def ask_philosopher(request: ChatRequest):
+    question = request.question.strip().lower()
+    cache_key = f"cunk:qa:{question}"
+    # Check Redis cache first
+    cached_answer = redis_client.get(cache_key)
+    if cached_answer:
+        logger.info(f"[REDIS CACHE] Returning cached answer for: {question}")
+        return {"answer": cached_answer}
+
     prompt = (
         "You are Philomena Cunk, a satirical British presenter. "
         "Respond to the following question with wit, sarcasm, and real historical or philosophical context. "
@@ -166,4 +212,6 @@ async def ask_philosopher(request: ChatRequest):
         answer = messages[-1].content
     else:
         answer = str(result)
+    # Store in Redis cache (optionally set TTL, e.g., 1 day)
+    redis_client.set(cache_key, answer, ex=86400)
     return {"answer": answer}
