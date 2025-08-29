@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -17,6 +18,10 @@ from langchain_community.utilities import WikipediaAPIWrapper
 from langgraph.prebuilt import create_react_agent
 from langchain.agents import Tool
 
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("philomena_cunk")
 load_dotenv()
 
 
@@ -95,6 +100,28 @@ class ChatRequest(BaseModel):
 
 
 # Wikipedia tool setup
+
+# Wrappers to add logging when tools are used
+def wikipedia_logged(*args, **kwargs):
+    logger.info(f"[TOOL] Wikipedia tool used. Args: {args}, Kwargs: {kwargs}")
+    try:
+        result = wikipedia.run(*args, **kwargs)
+        logger.info(f"[TOOL] Wikipedia result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[TOOL] Wikipedia tool error: {e}")
+        raise
+
+def duckduckgo_logged(*args, **kwargs):
+    logger.info(f"[TOOL] DuckDuckGo tool used. Args: {args}, Kwargs: {kwargs}")
+    try:
+        result = duckduckgo_search.run(*args, **kwargs)
+        logger.info(f"[TOOL] DuckDuckGo result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[TOOL] DuckDuckGo tool error: {e}")
+        raise
+
 wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
 duckduckgo_search = DuckDuckGoSearchRun()
 
@@ -102,12 +129,12 @@ tools = [
     Tool(
         name="Wikipedia",
         description="Useful for answering factual or historical questions.",
-        func=wikipedia.run,
+        func=wikipedia_logged,
     ),
     Tool(
         name="DuckDuckGo_Search",
         description="Useful for searching the web for current events or general information.",
-        func=duckduckgo_search.run,
+        func=duckduckgo_logged,
     ),
 ]
 
