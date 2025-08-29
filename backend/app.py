@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -17,8 +18,48 @@ from langchain_community.utilities import WikipediaAPIWrapper
 from langgraph.prebuilt import create_react_agent
 from langchain.agents import Tool
 
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("philomena_cunk")
 load_dotenv()
 
+
+
+# Redis cache for common questions
+try:
+    import redis
+    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_DB = int(os.getenv("REDIS_DB", 0))
+    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+    redis_client = redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=REDIS_DB,
+        password=REDIS_PASSWORD,
+        decode_responses=True,
+    )
+    # Test connection
+    try:
+        redis_client.ping()
+        logger.info("Connected to Redis server.")
+    except Exception as e:
+        logger.warning(f"Redis server not available: {e}. Caching disabled.")
+        class DummyRedis:
+            def get(self, key):
+                return None
+            def set(self, key, value, ex=None):
+                pass
+        redis_client = DummyRedis()
+except ImportError as e:
+    logger.warning(f"redis-py not installed: {e}. Caching disabled.")
+    class DummyRedis:
+        def get(self, key):
+            return None
+        def set(self, key, value, ex=None):
+            pass
+    redis_client = DummyRedis()
 
 app = FastAPI(
     title="Philomena Cunk API",
@@ -95,6 +136,28 @@ class ChatRequest(BaseModel):
 
 
 # Wikipedia tool setup
+
+# Wrappers to add logging when tools are used
+def wikipedia_logged(*args, **kwargs):
+    logger.info(f"[TOOL] Wikipedia tool used. Args: {args}, Kwargs: {kwargs}")
+    try:
+        result = wikipedia.run(*args, **kwargs)
+        logger.info(f"[TOOL] Wikipedia result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[TOOL] Wikipedia tool error: {e}")
+        raise
+
+def duckduckgo_logged(*args, **kwargs):
+    logger.info(f"[TOOL] DuckDuckGo tool used. Args: {args}, Kwargs: {kwargs}")
+    try:
+        result = duckduckgo_search.run(*args, **kwargs)
+        logger.info(f"[TOOL] DuckDuckGo result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[TOOL] DuckDuckGo tool error: {e}")
+        raise
+
 wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
 duckduckgo_search = DuckDuckGoSearchRun()
 
@@ -102,12 +165,12 @@ tools = [
     Tool(
         name="Wikipedia",
         description="Useful for answering factual or historical questions.",
-        func=wikipedia.run,
+        func=wikipedia_logged,
     ),
     Tool(
         name="DuckDuckGo_Search",
         description="Useful for searching the web for current events or general information.",
-        func=duckduckgo_search.run,
+        func=duckduckgo_logged,
     ),
 ]
 
@@ -115,10 +178,20 @@ tools = [
 react_agent = create_react_agent(llm, tools)
 
 
+
+
 @app.post(
     "/ask", summary="Ask the Philomena Cunk", tags=["Philosophy QA"]
 )
 async def ask_philosopher(request: ChatRequest):
+    question = request.question.strip().lower()
+    cache_key = f"cunk:qa:{question}"
+    # Check Redis cache first
+    cached_answer = redis_client.get(cache_key)
+    if cached_answer:
+        logger.info(f"[REDIS CACHE] Returning cached answer for: {question}")
+        return {"answer": cached_answer}
+
     prompt = (
         "You are Philomena Cunk, a satirical British presenter. "
         "Respond to the following question with wit, sarcasm, and real historical or philosophical context. "
@@ -139,4 +212,6 @@ async def ask_philosopher(request: ChatRequest):
         answer = messages[-1].content
     else:
         answer = str(result)
+    # Store in Redis cache (optionally set TTL, e.g., 1 day)
+    redis_client.set(cache_key, answer, ex=86400)
     return {"answer": answer}
