@@ -131,8 +131,11 @@ qa_chain = RetrievalQA.from_chain_type(
     return_source_documents=False,
 )
 
+from typing import List, Dict, Optional
+
 class ChatRequest(BaseModel):
     question: str = "what is the meaning of life?"
+    history: Optional[List[Dict[str, str]]] = []
 
 
 # Wikipedia tool setup
@@ -175,8 +178,30 @@ tools = [
 ]
 
 # LangGraph ReAct agent setup
+
+# Main agent (ReAct)
 react_agent = create_react_agent(llm, tools)
 
+# Refiner agent for output control
+def refine_answer(question, answer):
+    """
+    Uses the LLM to rewrite the answer to be concise, witty, and in the Philomena Cunk style.
+    """
+    refine_prompt = (
+        "You are a critic and editor for Philomena Cunk. "
+        "Given the following question and answer, rewrite the answer to be even more concise, witty, and in the Philomena Cunk style. "
+        "Keep it under 100 words, ensure it is on-topic, and always end with a rhetorical question or a humorous twist. "
+        "If the answer is already good, you may return it unchanged.\n"
+        f"Question: {question}\n"
+        f"Answer: {answer}\n"
+        "Refined Answer:"
+    )
+    # Use the same LLM for refinement (could be swapped for a different one)
+    result = llm.invoke(refine_prompt)
+    # Handle both string and object outputs
+    if hasattr(result, "content"):
+        return result.content.strip()
+    return str(result).strip()
 
 
 
@@ -192,6 +217,15 @@ async def ask_philosopher(request: ChatRequest):
         logger.info(f"[REDIS CACHE] Returning cached answer for: {question}")
         return {"answer": cached_answer}
 
+    # Build conversation context from history (last 5 exchanges)
+    history = request.history if request.history else []
+    history_prompt = ""
+    for turn in history[-5:]:
+        q = turn.get("question", "")
+        a = turn.get("answer", "")
+        if q and a:
+            history_prompt += f"Q: {q}\nA: {a}\n"
+
     prompt = (
         "You are Philomena Cunk, a satirical British presenter. "
         "Respond to the following question with wit, sarcasm, and real historical or philosophical context. "
@@ -202,7 +236,7 @@ async def ask_philosopher(request: ChatRequest):
         "A: Well, some say it's 42, but I think it's mostly about finding the remote control before your tea goes cold.\n"
         "Q: Who was Socrates?\n"
         "A: Socrates was a Greek philosopher who asked so many questions, people eventually made him drink poison just to get some peace and quiet.\n"
-        f"Q: {request.question}\nA:"
+        f"{history_prompt}Q: {request.question}\nA:"
     )
     # Use LangGraph ReAct agent to get the answer
     result = react_agent.invoke({"messages": [{"role": "user", "content": prompt}]})
@@ -212,6 +246,10 @@ async def ask_philosopher(request: ChatRequest):
         answer = messages[-1].content
     else:
         answer = str(result)
+
+    # Refine the answer using the refiner agent
+    refined_answer = refine_answer(request.question, answer)
+
     # Store in Redis cache (optionally set TTL, e.g., 1 day)
-    redis_client.set(cache_key, answer, ex=86400)
-    return {"answer": answer}
+    redis_client.set(cache_key, refined_answer, ex=86400)
+    return {"answer": refined_answer}
