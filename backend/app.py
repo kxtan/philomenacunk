@@ -175,9 +175,30 @@ tools = [
 ]
 
 # LangGraph ReAct agent setup
+
+# Main agent (ReAct)
 react_agent = create_react_agent(llm, tools)
 
-
+# Refiner agent for output control
+def refine_answer(question, answer):
+    """
+    Uses the LLM to rewrite the answer to be concise, witty, and in the Philomena Cunk style.
+    """
+    refine_prompt = (
+        "You are a critic and editor for Philomena Cunk. "
+        "Given the following question and answer, rewrite the answer to be even more concise, witty, and in the Philomena Cunk style. "
+        "Keep it under 100 words, ensure it is on-topic, and always end with a rhetorical question or a humorous twist. "
+        "If the answer is already good, you may return it unchanged.\n"
+        f"Question: {question}\n"
+        f"Answer: {answer}\n"
+        "Refined Answer:"
+    )
+    # Use the same LLM for refinement (could be swapped for a different one)
+    result = llm.invoke(refine_prompt)
+    # Handle both string and object outputs
+    if hasattr(result, "content"):
+        return result.content.strip()
+    return str(result).strip()
 
 
 @app.post(
@@ -212,6 +233,10 @@ async def ask_philosopher(request: ChatRequest):
         answer = messages[-1].content
     else:
         answer = str(result)
+
+    # Refine the answer using the refiner agent
+    refined_answer = refine_answer(request.question, answer)
+
     # Store in Redis cache (optionally set TTL, e.g., 1 day)
-    redis_client.set(cache_key, answer, ex=86400)
-    return {"answer": answer}
+    redis_client.set(cache_key, refined_answer, ex=86400)
+    return {"answer": refined_answer}
