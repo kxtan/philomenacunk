@@ -80,13 +80,26 @@ function App() {
 
 
     try {
+      // Build history: array of {question, answer} from previous user/bot pairs
+      const history = [];
+      for (let i = 0; i < messages.length - 1; i += 2) {
+        if (
+          messages[i].sender === "user" &&
+          messages[i + 1] && messages[i + 1].sender === "bot"
+        ) {
+          history.push({
+            question: messages[i].text,
+            answer: messages[i + 1].text,
+          });
+        }
+      }
       const response = await fetch("http://localhost:8000/ask", {
         method: "POST",
         headers: {
           'accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ question: input })
+        body: JSON.stringify({ question: input, history })
       });
       const data = await response.json();
       const botReply = data.answer || "Sorry, I don't have a philosophical answer for that yet.";

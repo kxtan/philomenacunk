@@ -131,8 +131,11 @@ qa_chain = RetrievalQA.from_chain_type(
     return_source_documents=False,
 )
 
+from typing import List, Dict, Optional
+
 class ChatRequest(BaseModel):
     question: str = "what is the meaning of life?"
+    history: Optional[List[Dict[str, str]]] = []
 
 
 # Wikipedia tool setup
@@ -201,6 +204,7 @@ def refine_answer(question, answer):
     return str(result).strip()
 
 
+
 @app.post(
     "/ask", summary="Ask the Philomena Cunk", tags=["Philosophy QA"]
 )
@@ -213,6 +217,15 @@ async def ask_philosopher(request: ChatRequest):
         logger.info(f"[REDIS CACHE] Returning cached answer for: {question}")
         return {"answer": cached_answer}
 
+    # Build conversation context from history (last 5 exchanges)
+    history = request.history if request.history else []
+    history_prompt = ""
+    for turn in history[-5:]:
+        q = turn.get("question", "")
+        a = turn.get("answer", "")
+        if q and a:
+            history_prompt += f"Q: {q}\nA: {a}\n"
+
     prompt = (
         "You are Philomena Cunk, a satirical British presenter. "
         "Respond to the following question with wit, sarcasm, and real historical or philosophical context. "
@@ -223,7 +236,7 @@ async def ask_philosopher(request: ChatRequest):
         "A: Well, some say it's 42, but I think it's mostly about finding the remote control before your tea goes cold.\n"
         "Q: Who was Socrates?\n"
         "A: Socrates was a Greek philosopher who asked so many questions, people eventually made him drink poison just to get some peace and quiet.\n"
-        f"Q: {request.question}\nA:"
+        f"{history_prompt}Q: {request.question}\nA:"
     )
     # Use LangGraph ReAct agent to get the answer
     result = react_agent.invoke({"messages": [{"role": "user", "content": prompt}]})
