@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: philomenacunk-backend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: philomenacunk-backend
+  template:
+    metadata:
+      labels:
+        app: philomenacunk-backend
+    spec:
+      containers:
+      - name: philomenacunk-backend
+        image: philomenacunk-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: philomenacunk-backend-service
+spec:
+  selector:
+    app: philomenacunk-backend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP

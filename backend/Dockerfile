@@ -9,9 +9,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend code
+
+# Copy backend code and .env file
 COPY app.py ./
 COPY data ./data
+COPY .env ./
 
 
 # Install Python dependencies
