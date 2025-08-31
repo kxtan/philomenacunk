@@ -6,3 +6,10 @@ langchain
 langchain-openai
 langchain-community
 chromadb
+langgraph
+pydantic
+transformers
+sentence-transformers
+typing-extensions
+wikipedia
+ddgs
