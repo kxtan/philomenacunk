@@ -93,7 +93,7 @@ function App() {
           });
         }
       }
-      const response = await fetch("http://localhost:8000/ask", {
+      const response = await fetch("http://localhost:8000/api/v1/ask", {
         method: "POST",
         headers: {
           'accept': 'application/json',
